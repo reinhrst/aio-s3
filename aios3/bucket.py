@@ -366,7 +366,8 @@ class Bucket(object):
     @asyncio.coroutine
     def upload(self, key, data,
             content_length=None,
-            content_type='application/octed-stream'):
+            content_type='application/octed-stream',
+            last_modified=None):
         """Upload file to S3
 
         The `data` might be a generator or stream.
@@ -387,6 +388,8 @@ class Bucket(object):
             }
         if content_length is not None:
             headers['CONTENT-LENGTH'] = str(content_length)
+        if last_modified:
+            headers.update({"x-amz-last-modified": last_modified})
         result = yield from self._request(Request("PUT", '/' + key, {},
             headers=headers, payload=data))
         try:
