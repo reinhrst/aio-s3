@@ -325,7 +325,7 @@ class Bucket(object):
         if after_filename:
             marker = after_filename
         else:
-            marker is None
+            marker = ''
 
         @asyncio.coroutine
         def read_next():
