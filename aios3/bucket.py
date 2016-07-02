@@ -320,8 +320,12 @@ class Bucket(object):
         return list(map(Key.from_xml,
                         x.findall('s3:Contents', namespaces=NS)))
 
-    def list_by_chunks(self, prefix='', max_keys=1000, marker=''):
+    def list_by_chunks(self, prefix='', max_keys=1000, after_filename=None):
         final = False
+        if after_filename:
+            marker = after_filename
+        else:
+            marker is None
 
         @asyncio.coroutine
         def read_next():
