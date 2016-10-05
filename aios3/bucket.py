@@ -20,13 +20,7 @@ S3_NS = 'http://s3.amazonaws.com/doc/2006-03-01/'
 NS = {'s3': S3_NS}
 
 _SIGNATURES = {}
-SIGNATURE_V2 = 'v2'
 SIGNATURE_V4 = 'v4'
-SIG_V2_SUBRESOURCES = {
-    'acl', 'lifecycle', 'location', 'logging', 'notification',
-    'partNumber', 'policy', 'requestPayment', 'torrent', 'uploadId',
-    'uploads', 'versionId', 'versioning', 'versions', 'website'
-    }
 
 
 class Key(object):
@@ -85,7 +79,7 @@ def _signkey(key, date, region, service):
 
 @partial(_SIGNATURES.setdefault, SIGNATURE_V4)
 def sign_v4(req, *,
-         aws_key, aws_secret, aws_service='s3', aws_region='us-east-1', **_):
+         aws_key, aws_secret, aws_token, aws_service='s3', aws_region='us-east-1', **_):
 
     time = datetime.datetime.utcnow()
     date = time.strftime('%Y%m%d')
@@ -96,6 +90,8 @@ def sign_v4(req, *,
     else:
         payloadhash = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
     req.headers['x-amz-content-sha256'] = payloadhash
+    if aws_token:
+        req.headers['x-amz-security-token'] = payloadhash
 
     signing_key = _signkey(aws_secret, date, aws_region, aws_service)
 
@@ -139,41 +135,6 @@ def sign_v4(req, *,
 
 def _hmac_old(key, val):
     return hmac.new(key, val, hashlib.sha1).digest()
-
-
-@partial(_SIGNATURES.setdefault, SIGNATURE_V2)
-def sign_v2(req, aws_key, aws_secret, aws_bucket, **_):
-    time = datetime.datetime.utcnow()
-    timestr = time.strftime("%Y%m%dT%H%M%SZ")
-    req.headers['x-amz-date'] = timestr
-
-    subresource = '&'.join(sorted(
-        (k + '=' + v) if v else k
-        for k, v in req.params.items()
-        if k in SIG_V2_SUBRESOURCES))
-    if subresource:
-        subresource = '?' + subresource
-
-    string_to_sign = (
-        '{req.verb}\n'
-        '{cmd5}\n'
-        '{ctype}\n'
-        '\n'  # date, we use x-amz-date
-        '{headers}\n'
-        '{resource}'
-        ).format(
-            req=req,
-            cmd5=req.headers.get('CONTENT-MD5', '') or '',
-            ctype=req.headers.get('CONTENT-TYPE', '') or '',
-            headers='\n'.join(k.lower() + ':' + req.headers[k].strip()
-                for k in sorted(req.headers)
-                if k.lower().startswith('x-amz-')),
-            resource='/' + aws_bucket + req.resource + subresource)
-    sig = base64.b64encode(
-        _hmac_old(aws_secret.encode('ascii'), string_to_sign.encode('ascii'))
-        ).decode('ascii')
-    ahdr = 'AWS {key}:{sig}'.format(key=aws_key, sig=sig)
-    req.headers['Authorization'] = ahdr
 
 
 class MultipartUpload(object):
@@ -263,7 +224,7 @@ class Bucket(object):
 
     def __init__(self, name, *,
                  port=80,
-                 aws_key, aws_secret,
+                 aws_key, aws_secret, aws_token,
                  aws_region='us-east-1',
                  aws_endpoint='s3.amazonaws.com',
                  signature=SIGNATURE_V4,
@@ -273,6 +234,7 @@ class Bucket(object):
         self._aws_sign_data = {
             'aws_key': aws_key,
             'aws_secret': aws_secret,
+            'aws_token': aws_token,
             'aws_region': aws_region,
             'aws_service': 's3',
             'aws_bucket': name,
