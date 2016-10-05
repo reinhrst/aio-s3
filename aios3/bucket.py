@@ -91,7 +91,7 @@ def sign_v4(req, *,
         payloadhash = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
     req.headers['x-amz-content-sha256'] = payloadhash
     if aws_token:
-        req.headers['x-amz-security-token'] = payloadhash
+        req.headers['x-amz-security-token'] = aws_token
 
     signing_key = _signkey(aws_secret, date, aws_region, aws_service)
 
