@@ -350,11 +350,13 @@ class Bucket(object):
         headers = {
             'HOST': self._host,
             'CONTENT-TYPE': content_type,
+            "x-amz-server-side-encryption": "AES256",
             }
         if content_length is not None:
             headers['CONTENT-LENGTH'] = str(content_length)
         if last_modified:
             headers.update({"x-amz-last-modified": last_modified})
+            headers.update({"x-amz-server-side-encryption": "AES256"})
         result = yield from self._request(Request("PUT", '/' + key, {},
             headers=headers, payload=data))
         try:
