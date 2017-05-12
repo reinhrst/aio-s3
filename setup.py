@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='aio-s3',
-      version='0.1.4',
+      version='0.1.6',
       description='Asyncio-based client for S3',
       author='Paul Colomiets',
       author_email='paul@colomiets.name',
