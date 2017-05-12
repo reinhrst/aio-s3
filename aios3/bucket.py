@@ -61,7 +61,7 @@ class Request(object):
 
     @property
     def url(self):
-        return 'http://{0.headers[HOST]}{0.resource}?{0.query_string}' \
+        return 'https://{0.headers[HOST]}{0.resource}?{0.query_string}' \
             .format(self)
 
 
